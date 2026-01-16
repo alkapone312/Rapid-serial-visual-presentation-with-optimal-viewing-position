@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>RSVP PDF Reader</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      color: white;
+      font-family: 'Fira Mono', 'Courier New', monospace;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #viewer {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      gap: 30px;
+    }
+
+    #reader {
+      min-height: 30px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .ovp {
+      color: red;
+    }
+
+    .marker {
+      width: 14px;
+      height: 14px;
+      border-left: 2px solid red;
+      border-right: 2px solid red;
+    }
+
+    .marker.top {
+      border-bottom: 2px solid red;
+    }
+
+    .marker.bottom {
+      border-top: 2px solid red;
+    }
+
+    #controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      padding: 16px 0;
+      background: #0b0b0b;
+    }
+
+    #wpmLabel {
+      font-size: 14px;
+      opacity: 0.7;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    #counterLabel {
+      font-size: 14px;
+      opacity: 0.7;
+      min-width: 80px;
+      text-align: center;
+      background: #1a1a1a;
+      border-radius: 4px;
+      padding: 2px 4px;
+      color: white;
+    }
+
+    #counterLabel input {
+      width: 40px;
+      background: transparent;
+      border: none;
+      color: white;
+      font-family: 'Fira Mono', monospace;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .control {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .control svg {
+      width: 24px;
+      height: 24px;
+      stroke: white;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .control:hover {
+      opacity: 1;
+    }
+
+    #settings {
+      position: absolute;
+      bottom: 80px;
+      background: #111;
+      border: 1px solid #333;
+      padding: 12px;
+      display: none;
+    }
+
+    input[type="range"] {
+      width: 160px;
+      accent-color: #666;
+    }
+
+    #filePicker {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 20px;
+      background: #1a1a1a;
+      cursor: pointer;
+      opacity: 0.85;
+    }
+
+    #filePicker:hover { opacity: 1; }
+
+    #filePicker svg {
+      width: 16px;
+      height: 16px;
+      stroke: white;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    #filePicker span {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <label id="filePicker">
+    <input type="file" id="fileInput" accept="application/pdf, text/plain" hidden />
+    <svg viewBox="0 0 24 24"><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/><path d="M7 9l5-5 5 5"/><path d="M12 4v12"/></svg>
+    <span>Wczytaj PDF</span>
+  </label>
+
+  <div id="viewer">
+    <div class="marker top"></div>
+    <div id="reader"></div>
+    <div class="marker bottom"></div>
+  </div>
+
+  <div id="settings">
+    <div>Wielkość czcionki</div>
+    <input type="range" id="fontSize" min="24" max="96" value="48" />
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="fontMinus">−</button>
+      <button id="fontPlus">+</button>
+    </div>
+  </div>
+
+  <div id="controls">
+    <div class="control" id="settingsBtn">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.82-.33 1.6 1.6 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.6 1.6 0 0 0-1-1.51 1.6 1.6 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-.38-1.7 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.09a1.6 1.6 0 0 0 1.51-1 1.6 1.6 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.6 1.6 0 0 0 9 4.6a1.6 1.6 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.6 1.6 0 0 0 1 1.51 1.6 1.6 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.33 1.82 1.6 1.6 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.6 1.6 0 0 0-1.51 1z"/></svg>
+    </div>
+    <div class="control" id="playPause">
+      <svg id="playIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+      <svg id="pauseIcon" viewBox="0 0 24 24" style="display: none;">
+        <rect x="6" y="3" width="4" height="18"/>
+        <rect x="14" y="3" width="4" height="18"/>
+      </svg>
+    </div>
+    <div class="control" id="rewind">
+      <svg viewBox="0 0 24 24"><polygon points="12,4 4,12 12,20"/><polygon points="20,4 12,12 20,20"/></svg>
+    </div>
+    <div class="control" id="speedDown">
+      <svg viewBox="0 0 24 24"><path d="M4 12h16"/></svg>
+    </div>
+    <div id="wpmLabel">300 WPM</div>
+    <div class="control" id="speedUp">
+      <svg viewBox="0 0 24 24"><path d="M4 12h16M12 4v16"/></svg>
+    </div>
+    <div id="counterLabel"><input type="text" id="currentWordInput" value="0"/> / <span id="numberOfWords">0</span></div>
+  </div>
+
+  <script src="pdf.min.js"></script>
+  <script>
+  class ReadingModel {
+      constructor(words) {
+        this.words = words;
+        this.index = 0;
+      }
+
+      getWords() { 
+        return this.words; 
+      }
+      
+      getCount() { 
+        return this.words.length; 
+      }
+      
+      getCurrentWord() { 
+        return this.words[this.index] || ''; 
+      }
+      
+      getCurrentWordOvpIndex() {
+        const word = this.getCurrentWord();
+        const ovpIndex = Math.floor(word.length / 5 * 2);
+
+        return ovpIndex;
+      }
+
+      getCurrentWordOvp() {
+        const word = this.getCurrentWord();
+
+        return word[this.getCurrentWordOvpIndex()];
+      }
+
+      getCurrentWordBefore() {
+        const word = this.getCurrentWord();
+
+        return word.slice(0, this.getCurrentWordOvpIndex());
+      }
+
+      getCurrentWordAfter() {
+        const word = this.getCurrentWord();
+
+        return word.slice(this.getCurrentWordOvpIndex() + 1, word.length);
+      }
+      
+      setCurrentWord(i) { 
+        if (i >=0 && i < this.words.length) this.index = i; 
+      }
+      
+      nextWord() { 
+        if (this.index < this.words.length - 1) {
+          this.index++;
+        } 
+        
+        return this.getCurrentWord(); 
+      }
+
+      previousWord() { 
+        if (this.index > 0) {
+          this.index--;
+        } 
+        
+        return this.getCurrentWord(); 
+      }
+
+      isEnd() {
+        return this.index == this.words.length;
+      }
+
+      getCurrentWordIndex() {
+        return this.index;
+      }
+    }
+
+    class ReadingLoader {
+      async load(file) { 
+        throw 'Not implemented'; 
+      }
+    }
+
+    class PdfLoader extends ReadingLoader {
+      async load(file) {
+        const buf = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map(item=>item.str).join(' ') + ' ';
+        }
+        const words = text.replace(/\s+/g,' ').trim().split(' ');
+
+        return new ReadingModel(words);
+      }
+    }
+
+    class TxtLoader extends ReadingLoader {
+      async load(file) {
+        const text = await file.text();
+        const words = text.replace(/\s+/g,' ').trim().split(' ');
+
+        return new ReadingModel(words);
+      }
+    }
+
+    class ReaderController {
+      constructor(readerElement, model, wpmLabel, currentWordInput) {
+        this.reader = readerElement;
+        this.model = model;
+        this.wpm = 300;
+        this.timer = null;
+        this.playing = false;
+        this.wpmLabel = wpmLabel;
+        this.currentWordInput = currentWordInput;
+      }
+
+      renderWord() {
+        if (!this.model) return;
+        const before = this.model.getCurrentWordBefore();
+        const ovp = this.model.getCurrentWordOvp();
+        const after = this.model.getCurrentWordAfter();
+        const ovpIndex = this.model.getCurrentWordOvpIndex();
+
+        this.reader.innerHTML = `<span>${before}</span><span class="ovp">${ovp}</span><span>${after}</span>`;
+        const shift = 0.5 + ovpIndex;
+        this.reader.style.transform = `translateX(calc(50% - ${shift}ch))`;
+        this.currentWordInput.value = this.model.getCurrentWordIndex() + 1;
+      }
+
+      step() {
+        if (!this.playing) return;
+        this.model.nextWord();
+        this.renderWord();
+        this.timer = setTimeout(() => this.step(), 60000 / this.wpm);
+      }
+
+      isPlaying() {
+        return this.playing
+      }
+
+      play() {
+        if (this.playing) return;
+        this.playing = true;
+        this.step();
+      }
+
+      pause() {
+        this.playing = false;
+        clearTimeout(this.timer);
+      }
+
+      setWpm(val) {
+        this.wpm = val;
+        this.wpmLabel.textContent = this.wpm + ' WPM';
+      }
+
+      setCurrentWord(index) {
+        this.model.setCurrentWord(index);
+        this.renderWord();
+      }
+
+      rewind() {
+        this.model.previousWord();
+        this.renderWord();
+      }
+    }
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
+
+    const reader = document.getElementById('reader');
+    const fileInput = document.getElementById('fileInput');
+    const playPause = document.getElementById('playPause');
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const speedUp = document.getElementById('speedUp');
+    const speedDown = document.getElementById('speedDown');
+    const rewind = document.getElementById('rewind');
+    const wpmLabel = document.getElementById('wpmLabel');
+    const counterLabel = document.getElementById('counterLabel');
+    const currentWordInput = document.getElementById('currentWordInput');
+    const numberOfWords = document.getElementById('numberOfWords');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settings = document.getElementById('settings');
+    const fontSizeInput = document.getElementById('fontSize');
+
+    let readingModel = null;
+    let readerController = null;
+    async function init(file) {
+        readingModel = await loadFile(file); 
+        readerController = new ReaderController(reader, readingModel, wpmLabel, currentWordInput)
+        numberOfWords.innerText = readingModel.getCount()
+    }
+
+    async function loadFile(file) {
+      let loader;
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (ext === 'pdf') loader = new PdfLoader();
+      else if (ext === 'txt') loader = new TxtLoader();
+      else throw 'Nieobsługiwany format';
+      return await loader.load(file);
+    }
+
+    reader.style.fontSize = fontSizeInput.value + 'px';
+
+    playPause.onclick = () => {
+      if (!readerController.isPlaying()) {
+        pauseIcon.style.display = 'block';
+        playIcon.style.display = 'none';
+        readerController.play();
+      } else {
+        pauseIcon.style.display = 'none';
+        playIcon.style.display = 'block';
+        readerController.pause();
+      }
+    };
+
+    rewind.onclick = () => {
+      readerController.rewind()
+    };
+
+    speedUp.onclick = () => { 
+      wpm = Math.min(2000, wpm + 50); 
+      readerController.setWpm(wpm); 
+    };
+
+    speedDown.onclick = () => { 
+      wpm = Math.max(50, wpm - 50); 
+      readerController.setWpm(wpm); 
+    };
+
+    settingsBtn.onclick = () => { 
+      settings.style.display = settings.style.display === 'none' ? 'block' : 'none'; 
+    };
+
+    function applyFontSize(val){ 
+      reader.style.fontSize = val + 'px'; 
+    }
+    fontSizeInput.oninput = () => applyFontSize(fontSizeInput.value);
+    document.getElementById('fontPlus').onclick = () => { fontSizeInput.value = Number(fontSizeInput.value) + 4; applyFontSize(fontSizeInput.value); };
+    document.getElementById('fontMinus').onclick = () => { fontSizeInput.value = Number(fontSizeInput.value) - 4; applyFontSize(fontSizeInput.value); };
+
+    fileInput.onchange = async (e) => { 
+      if (e.target.files[0]) {
+        init(e.target.files[0])
+      }
+    };
+
+    currentWordInput.onchange = () => {
+      const val = parseInt(currentWordInput.value);
+      if (!isNaN(val) && val >= 0 && val < readingModel.getCount()) {
+        readerController.setCurrentWord(val);
+      }
+    };
+  </script>
+</body>
+</html>
