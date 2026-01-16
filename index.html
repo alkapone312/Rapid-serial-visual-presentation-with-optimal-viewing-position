@@ -31,6 +31,7 @@
       justify-content: center;
       width: 100%;
       gap: 30px;
+      overflow: hidden;
     }
 
     #reader {
@@ -256,7 +257,7 @@
       getCurrentWordOvp() {
         const word = this.getCurrentWord();
 
-        return word[this.getCurrentWordOvpIndex()];
+        return word[this.getCurrentWordOvpIndex()] ?? '';
       }
 
       getCurrentWordBefore() {
