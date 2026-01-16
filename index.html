@@ -87,6 +87,17 @@
       color: white;
     }
 
+    #estimatedTimeLabel {
+      font-size: 14px;
+      opacity: 0.7;
+      min-width: 80px;
+      text-align: center;
+      background: #1a1a1a;
+      border-radius: 4px;
+      padding: 2px 4px;
+      color: white;
+    }
+
     #counterLabel input {
       width: 40px;
       background: transparent;
@@ -212,6 +223,7 @@
       </div>
     </div>
     <div id="counterLabel"><input type="text" id="currentWordInput" value="0"/> / <span id="numberOfWords">0</span></div>
+    <div id="estimatedTimeLabel">00:00</div>
   </div>
 
   <script src="pdf.min.js"></script>
@@ -320,7 +332,7 @@
     }
 
     class ReaderController {
-      constructor(readerElement, model, wpmLabel, currentWordInput) {
+      constructor(readerElement, model, wpmLabel, currentWordInput, estimatedTimeLabel) {
         this.reader = readerElement;
         this.model = model;
         this.wpm = 300;
@@ -328,6 +340,8 @@
         this.playing = false;
         this.wpmLabel = wpmLabel;
         this.currentWordInput = currentWordInput;
+        this.estimatedTimeLabel = estimatedTimeLabel;
+        this.updateEstimatedTime();
       }
 
       renderWord() {
@@ -348,6 +362,7 @@
         this.model.nextWord();
         this.renderWord();
         this.timer = setTimeout(() => this.step(), 60000 / this.wpm);
+        this.updateEstimatedTime()
       }
 
       isPlaying() {
@@ -383,6 +398,21 @@
         this.model.previousWord();
         this.renderWord();
       }
+
+      updateEstimatedTime() {
+        if (!this.model) {
+          return;
+        }
+
+        const wordsLeft = this.model.getCount() - this.model.getCurrentWordIndex();
+        const wpm = this.getWpm();
+
+        const hours = Math.floor(wordsLeft / (wpm * 60));
+        const minutes = Math.floor(wordsLeft / wpm % 60);
+        const seconds = Math.floor((wordsLeft % wpm) / wpm * 60);
+        const formatted = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+        this.estimatedTimeLabel.innerText = formatted;
+      }
     }
 
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
@@ -402,14 +432,31 @@
     const settingsBtn = document.getElementById('settingsBtn');
     const settings = document.getElementById('settings');
     const fontSizeInput = document.getElementById('fontSize');
+    const estimatedTimeLabel = document.getElementById('estimatedTimeLabel');
 
     let readingModel = new ReadingModel([]);
-    let readerController = new ReaderController(reader, readingModel, wpmLabel, currentWordInput);
+    let readerController = new ReaderController(reader, readingModel, wpmLabel, currentWordInput, estimatedTimeLabel);
     async function init(file) {
+        setControlsEnabled(false)
         readingModel = await loadFile(file);
-        readerController = new ReaderController(reader, readingModel, wpmLabel, currentWordInput)
+        readerController = new ReaderController(reader, readingModel, wpmLabel, currentWordInput, estimatedTimeLabel)
         numberOfWords.innerText = readingModel.getCount()
+        setControlsEnabled(true)
     }
+
+    function setControlsEnabled(enabled) {
+      const controls = [
+        playPause,
+        rewind,
+        speedUp,
+        speedDown,
+        settingsBtn,
+        currentWordInput
+      ];
+      controls.forEach(ctrl => ctrl.disabled = !enabled);
+      controls.forEach(ctrl => ctrl.style.opacity = enabled ? '1' : '0.5');
+    }
+
 
     async function loadFile(file) {
       let loader;
