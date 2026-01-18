@@ -175,6 +175,10 @@
       font-size: 13px;
       opacity: 0.8;
     }
+
+    #next {
+      transform: rotateY(180deg);
+    }
   </style>
 </head>
 <body>
@@ -211,10 +215,15 @@
         <rect x="14" y="3" width="4" height="18"/>
       </svg>
     </div>
-    <div class="control" id="rewind">
-      <svg viewBox="0 0 24 24"><polygon points="12,4 4,12 12,20"/><polygon points="20,4 12,12 20,20"/></svg>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div class="control" id="rewind">
+        <svg viewBox="0 0 24 24"><polygon points="12,4 4,12 12,20"/><polygon points="20,4 12,12 20,20"/></svg>
+      </div>
+      <div class="control" id="next">
+        <svg viewBox="0 0 24 24"><polygon points="12,4 4,12 12,20"/><polygon points="20,4 12,12 20,20"/></svg>
+      </div>
     </div>
-    <div style="display: flex; align-items: center">
+    <div style="display: flex; align-items: center;">
       <div class="control" id="speedDown">
         <svg viewBox="0 0 24 24"><path d="M4 12h16"/></svg>
       </div>
@@ -400,6 +409,12 @@
         this.renderWord();
       }
 
+
+      next() {
+        this.model.nextWord();
+        this.renderWord();
+      }
+
       updateEstimatedTime() {
         if (!this.model) {
           return;
@@ -426,6 +441,7 @@
     const speedUp = document.getElementById('speedUp');
     const speedDown = document.getElementById('speedDown');
     const rewind = document.getElementById('rewind');
+    const next = document.getElementById('next');
     const wpmLabel = document.getElementById('wpmLabel');
     const counterLabel = document.getElementById('counterLabel');
     const currentWordInput = document.getElementById('currentWordInput');
@@ -484,6 +500,10 @@
 
     rewind.onclick = () => {
       readerController.rewind()
+    };
+
+    next.onclick = () => {
+      readerController.next()
     };
 
     speedUp.onclick = () => { 
