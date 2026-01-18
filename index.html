@@ -371,8 +371,21 @@
         if (!this.playing) return;
         this.model.nextWord();
         this.renderWord();
-        this.timer = setTimeout(() => this.step(), 60000 / this.wpm);
+        this.timer = setTimeout(() => this.step(), this.getTimeout());
         this.updateEstimatedTime()
+      }
+
+      getTimeout() {
+        let timeout = 60000 / this.wpm;
+        if (this.model.getCurrentWord().slice(-1) == ".") {
+          timeout *= 2;
+        }
+
+        if (this.model.getCurrentWord().slice(-1) == ",") {
+          timeout *= 1.5;
+        }
+
+        return timeout;
       }
 
       isPlaying() {
