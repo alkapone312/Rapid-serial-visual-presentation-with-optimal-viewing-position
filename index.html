@@ -179,6 +179,10 @@
     #next {
       transform: rotateY(180deg);
     }
+
+    .grayed {
+      color: #333
+    }
   </style>
 </head>
 <body>
@@ -242,6 +246,16 @@
       constructor(words) {
         this.words = words;
         this.index = 0;
+      }
+
+      getWordsBeforeCurrent(number) {
+        const prev = Math.max(0, this.index - number)
+        return this.words.slice(prev, this.index)
+      }
+
+      getWordsAfterCurrent(number) {
+        const next = Math.min(this.words.length, this.index + number + 1); 
+        return this.words.slice(this.index + 1, next)
       }
 
       getWords() { 
@@ -360,9 +374,11 @@
         const ovp = this.model.getCurrentWordOvp();
         const after = this.model.getCurrentWordAfter();
         const ovpIndex = this.model.getCurrentWordOvpIndex();
+        const wordsBeforeCurrent = this.model.getWordsBeforeCurrent(5).join(' ');
+        const wordsAfterCurrent = this.model.getWordsAfterCurrent(5).join(' ');
 
-        this.reader.innerHTML = `<span>${before}</span><span class="ovp">${ovp}</span><span>${after}</span>`;
-        const shift = 0.5 + ovpIndex;
+        this.reader.innerHTML = `<span class="grayed">${wordsBeforeCurrent} </span><span>${before}</span><span class="ovp">${ovp}</span><span>${after}</span><span class="grayed"> ${wordsAfterCurrent}</span>`;
+        const shift = ovpIndex + wordsBeforeCurrent.length + 1.5;
         this.reader.style.transform = `translateX(calc(50% - ${shift}ch))`;
         this.currentWordInput.value = this.model.getCurrentWordIndex() + 1;
       }
@@ -406,6 +422,7 @@
       setWpm(val) {
         this.wpm = val;
         this.wpmLabel.textContent = this.wpm + ' WPM';
+        this.updateEstimatedTime()
       }
 
       getWpm() {
@@ -413,7 +430,7 @@
       }
 
       setCurrentWord(index) {
-        this.model.setCurrentWord(index);
+        this.model.setCurrentWord(index - 1);
         this.renderWord();
       }
 
@@ -542,7 +559,8 @@
 
     fileInput.onchange = async (e) => { 
       if (e.target.files[0]) {
-        init(e.target.files[0])
+        await init(e.target.files[0])
+        readerController.renderWord()
       }
     };
 
