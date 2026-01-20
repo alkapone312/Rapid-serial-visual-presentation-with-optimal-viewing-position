@@ -393,11 +393,11 @@
 
       getTimeout() {
         let timeout = 60000 / this.wpm;
-        if (this.model.getCurrentWord().slice(-1) == ".") {
+        if (['.', ':', ')', '?', '!', ']', '}'].includes(this.model.getCurrentWord().slice(-1))) {
           timeout *= 2;
         }
 
-        if (this.model.getCurrentWord().slice(-1) == ",") {
+        if ([',', '-', ';'].includes(this.model.getCurrentWord().slice(-1))) {
           timeout *= 1.5;
         }
 
